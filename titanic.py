@@ -9,7 +9,6 @@ train = pd.read_csv('train.csv')
 
 # Select out the columns with numerical data
 train_num = train[['survived', 'age','pclass','sibsp','parch', 'fare']].dropna(axis=0)
-train_num_a = np.array(train_num)
 
 # Try various different model parameters to find the best
 param_grid = [
@@ -20,7 +19,7 @@ param_grid = [
 
 # Split the dataset in two parts
 X_train, X_test, y_train, y_test = train_test_split(
-        train_num_a[:,1:], train_num_a[:,0], test_size=0.3, random_state=0)
+        train_num.values[:,1:], train_num.values[:,0], test_size=0.3, random_state=0)
 
 clf = GridSearchCV(svm.SVC(C=1), param_grid, 
         score_func=metrics.accuracy_score)

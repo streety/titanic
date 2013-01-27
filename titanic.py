@@ -1,36 +1,36 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn import metrics, svm
-from sklearn.cross_validation import KFold
+from sklearn.cross_validation import train_test_split
+from sklearn.grid_search import GridSearchCV
 
-# Read in the training data and take a quick look
+# Read in the training data
 train = pd.read_csv('train.csv')
-pd.scatter_matrix(train)
-plt.show()
 
 # Select out the columns with numerical data
 train_num = train[['survived', 'age','pclass','sibsp','parch', 'fare']].dropna(axis=0)
 train_num_a = np.array(train_num)
 
-# Create a support vector machine classifier
-# using KFold for cross-validation
-kf = KFold(len(train_num), 5, indices=False)
-accuracy = []
-rand_accuracy = [] # random classifier - want to do better
-for train, test in kf:
-    train_data = train_num_a[train,1:]
-    train_y = train_num_a[train,0]
-    test_data = train_num_a[test,1:]
-    test_y = train_num_a[test,0]
-    svc = svm.SVC(kernel='rbf', C=1.).fit(train_data, train_y)
-    predictions = svc.predict(test_data)
-    accuracy.append(metrics.accuracy_score(test_y, predictions))
-    rand_pred = np.random.random(test_y.shape[0]) # 549 out of 891 died
-    rand_pred[rand_pred > 549./891] = 1 # 549 out of 891 died
-    rand_pred[rand_pred <= 549./891] = 0
-    rand_accuracy.append(metrics.accuracy_score(test_y, rand_pred))
-print accuracy, 'mean: ', np.array(accuracy).mean()
-print rand_accuracy, 'mean: ', np.array(rand_accuracy).mean()
+# Try various different model parameters to find the best
+param_grid = [
+  {'C': [1e-2, 1e-1, 1, 1e1, 1e2,], 
+      'gamma': [1e-2, 1e-3, 1e-4, 1e-5], 
+      'kernel': ['rbf']},
+ ]
 
+# Split the dataset in two parts
+X_train, X_test, y_train, y_test = train_test_split(
+        train_num_a[:,1:], train_num_a[:,0], test_size=0.3, random_state=0)
 
+clf = GridSearchCV(svm.SVC(C=1), param_grid, 
+        score_func=metrics.accuracy_score)
+clf.fit(X_train, y_train, cv=3)
+
+print clf.best_estimator_
+for params, mean_score, scores in clf.grid_scores_:
+        print "%0.3f (+/-%0.03f) for %r" % (
+            mean_score, scores.std() / 2, params)
+print 'Testing best model on holdout data'
+y_true, y_pred = y_test, clf.predict(X_test)
+print metrics.classification_report(y_true, y_pred)
+print metrics.accuracy_score(y_true, y_pred)

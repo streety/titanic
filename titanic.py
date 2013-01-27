@@ -10,6 +10,15 @@ train = pd.read_csv('train.csv')
 # Select out the columns with numerical data
 train_num = train[['survived', 'age','pclass','sibsp','parch', 'fare']].dropna(axis=0)
 
+# Convert the sex into a numerical value and concatenate it
+# on the dataeframe of numerical data
+sex = train.ix[:,['sex']]
+sex.columns = ['sexnumeric']
+sex[sex == 'male'] = 1
+sex[sex == 'female'] = 0
+sex = sex.astype(np.uint8)
+train_num = pd.concat([train_num, sex], axis=1, join_axes=[train_num.index])
+
 # Try various different model parameters to find the best
 param_grid = [
   {'C': [1e-2, 1e-1, 1, 1e1, 1e2,], 
